@@ -52,19 +52,42 @@ cd $basePath
 ***************************************************
 * Nombre proyecto principal
 global projName "stataBcch"
-global metaProjectPath "${localPath}/proc/prod/${projName}/"
+global lclProjectPath "${localPath}/prod/${projName}/"
+global shrProjectPath "${sharedPath}/prod/${projName}/"
 
 * Cargamos archivos para parámetros
-use "${metaProjectPath}/dta/param.dta", replace
+use "${shrProjectPath}/dta/param.dta", replace
+
+* doPath archivo principal
+global doPath "${lclProjectPath}/do/"
 
 // Cargamos parámetros para cada proyecto específico
 ***************************************************
 local nobs = [_N]
 local metaVariables = "projectVer tipoAmbiente varsImport varsUtf varsToEncode varsPrice varsDicc varsDrop varsKey reshapeLongNeed reshapeLongRename reshapeLongByproduct reshapeLongBypEncode varsDropIfEmpty urlWebHook decimal miles shortFrmt"
 
+	* Diccionario
+	**************
+	* En el siguiente loop cargaremos todas las variables definidas arriba
+	* projectVer tipoAmbiente : 
+	* 					  Definimos nombre y ambiente de proyecto en que estamos trabajando
+	* varsImport 		: Nombre de todas las variables a ser importadas
+	* varsUtf 			: Variables a corregir problemas de importacion por encoding
+	* varsToEncode 		: Variables a encodear hard por Stata
+	* varsPrice 		: Variables string a llevar a númericas
+	* varsDicc 			: Variables para desarrollo de diccionario 
+	* varsDrop 			: Variables para eliminar (idealmente guardadas en el diccionario,
+	* 					  y no vitales para el desarrollo del proyecto  
+	* varsKey 			: Variables para generar key id (sólo un key id por base) 
+	* reshapeLongNeed, reshapeLongRename, 
+	* reshapeLongByproduct, reshapeLongBypEncode :
+	* 					  Variables para saber si hay que hacer reshape (poner prefijo variable wide)
+	* varsDropIfEmpty 	:Variables para drop si están vacías (después del reshape) 
+	* urlWebHook		: URL Webhook 
+
 forvalues projNum = 1/`nobs' {
 	
-	if `projNum' == 1 {
+	if `projNum' == 1 {   /* Eventualmente nos echaremos este if para correr todos los proyectos */
 	
 	foreach var of varlist `metaVariables' { 
 	
@@ -72,28 +95,10 @@ forvalues projNum = 1/`nobs' {
 		di "${`var'}"
 		
 	}
-	
-	* Diccionario
-	 
-	* Definimos nombre y ambiente de proyecto en que estamos trabajando: projectVer tipoAmbiente	
-	* Nombre de todas las variables a ser importadas: varsImport	
-	* Variables a corregir problemas de importacion por encoding: varsUtf
-	* Variables a encodear hard por Stata: varsToEncode	
-	* Variables string a llevar a númericas: varsPrice
-	* Variables para desarrollo de diccionario:  varsDicc
-	* Variables para eliminar (idealmente guardadas en el diccionario,
-	* y no vitales para el desarrollo del proyecto:  varsDrop
-	* Variables para generar key id (sólo un key id por base): varsKey
-	* Variables para saber si hay que hacer reshape (poner prefijo variable wide)
-	* reshapeLongNeed, reshapeLongRename, reshapeLongByproduct, reshapeLongBypEncode
-	* Variables para drop si están vacías (después del reshape): varsDropIfEmpty	
-	* URL Webhook: urlWebHook
 
 	// Identificar Rutas del Proyecto
 	***************************************************
-	global projPath "${basePath}/proc/${tipoAmbiente}/${projectVer}/"
-	cd ${projPath}
-	global doPath "${basePath}/proc/${tipoAmbiente}/${projName}/do/"
+	global projPath "${sharedPath}/${tipoAmbiente}/${projectVer}/"
 	global lblPath "${projPath}/lbl/"
 	global csvPath "${projPath}/csvOutput/"
 	global dtaPath "${projPath}/dta/"
@@ -103,6 +108,9 @@ forvalues projNum = 1/`nobs' {
 	global pdfPath "${projPath}/pdf/"
 	global plotPath "${projPath}/plot/"
 	global apiCallPath "${projPath}/apiCall/"
+	
+	* Seteamos directorio de trabajo
+	cd ${projPath}
 
 	// 0. Instalamos Software e Inicializamos Stata
 	***************************************************
@@ -113,10 +121,9 @@ forvalues projNum = 1/`nobs' {
 	// 1. Barrido de directorio e importación de 
 	//    archivos nuevos
 	***************************************************
-	do "${doPath}/actMaster.do"
+	*do "${doPath}/actMaster.do"
 
-	*do "${doPath}/loadBasePrincipalExtended.do"  * Análisis de bases
-
+	do "${doPath}/loadBasePrincipalExtended.do"  * Análisis de bases
 
 	// 2. Realizamos Cálculos
 	***************************************************
