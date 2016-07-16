@@ -121,9 +121,9 @@ forvalues projNum = 1/`nobs' {
 	// 1. Barrido de directorio e importaci—n de 
 	//    archivos nuevos
 	***************************************************
-	do "${doPath}/actMaster.do"
+	*do "${doPath}/actMaster.do"
 
-	*do "${doPath}/loadBasePrincipalExtended.do"  * An‡lisis de bases
+	do "${doPath}/loadBasePrincipalExtended.do"  * An‡lisis de bases
 
 	// 2. Realizamos C‡lculos
 	***************************************************
