@@ -45,7 +45,7 @@ exit
 }
 
 di "En $opsys - $hostname el directorio a utilizar es $basePath"
-cd $basePath
+cd $localPath
 
 
 // Identificar MetaParámetros del Proyecto
@@ -64,7 +64,7 @@ global doPath "${lclProjectPath}/do/"
 // Cargamos parámetros para cada proyecto específico
 ***************************************************
 local nobs = [_N]
-local metaVariables = "projectVer tipoAmbiente varsImport varsUtf varsToEncode varsPrice varsDicc varsDrop varsKey reshapeLongNeed reshapeLongRename reshapeLongByproduct reshapeLongBypEncode varsDropIfEmpty urlWebHook decimal miles shortFrmt"
+local metaVariables = "projectVer tipoAmbiente varsImport varsUtf varsToEncode varsPrice varsDicc varsDrop varsKey reshapeLongNeed reshapeLongRename reshapeLongByproduct reshapeLongBypEncode varsDropIfEmpty urlWebHook decimal miles shortFrmt apiKey"
 
 	* Diccionario
 	**************
@@ -84,6 +84,7 @@ local metaVariables = "projectVer tipoAmbiente varsImport varsUtf varsToEncode v
 	* 					  Variables para saber si hay que hacer reshape (poner prefijo variable wide)
 	* varsDropIfEmpty 	:Variables para drop si están vacías (después del reshape) 
 	* urlWebHook		: URL Webhook 
+	* apiKey			: apiKey
 
 forvalues projNum = 1/`nobs' {
 	
@@ -115,24 +116,29 @@ forvalues projNum = 1/`nobs' {
 	// 0. Instalamos Software e Inicializamos Stata
 	***************************************************
 	*do "${doPath}/installAdo.do"
-	*do "${doPath}/updatePrograms.do"
-	*do "${doPath}/chkDirStructure.do"
+	do "${doPath}/updatePrograms.do"
+	do "${doPath}/parseHub.do"
+	do "${doPath}/chkDirStructure.do"
+	
+	// 1. Ciclo ParseHub
+	***************************************************	
+	do "${doPath}/cicloParseHub.do"
 
-	// 1. Barrido de directorio e importación de 
+	// 2. Barrido de directorio e importación de 
 	//    archivos nuevos
 	***************************************************
 	*do "${doPath}/actMaster.do"
 
-	do "${doPath}/loadBasePrincipalExtended.do"  * Análisis de bases
+	*do "${doPath}/loadBasePrincipalExtended.do"  * Análisis de bases
 
-	// 2. Realizamos Cálculos
+	// 3. Realizamos Cálculos
 	***************************************************
 	*use "${dtaPath}/basePrincipal.dta", clear 
 	*do "${doPath}/recodeDb.do"                 
 	*do "${doPath}/encodeDb.do"
 	*do "${doPath}/calcMaster.do"
 	
-	// 3. Generamos Gráficos y Archivos Tex
+	// 4. Generamos Gráficos y Archivos Tex
 	***************************************************
 	*do "${doPath}/genOutput.do"
 

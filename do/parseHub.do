@@ -1,90 +1,158 @@
+*! version 0.1 16 Julio 2016
 
-* Definimos par‡metros de run a correr
-  local case = ""
-  * opciones runStart, runDetails, runCancel, getData 
-  local apiKey = ""
-  local projectToken = ""
-  local runToken = ""
-  local startUrl = ""
-  local startTemplate = ""
-  local startValueOverride = ""
-  local sendEmail = ""
-  local dataFormat = ""
-  local baseUrlC1 = "https://www.parsehub.com/api/v2"
-  local baseUrlC2 = "/projects/`projectToken'"
-  local baseUrlC3 = "/runs/`runToken'"
+* Programa realiza la accion que corresponde en parseHub
+* Esto puede ser iniciar un run, cargar los detalles de un
+* run a resultados r(), cancelar un run, o descargar el set de 
+* datos y enviarlos a la carpeta correspondiente. 
 
-  if "`case'"= "runStart" {
-  	local curlCode = "`baseUrlC1'`baseUrlC2'/run -X POST -d api_key=`apiKey' -d start_url =`startUrl' -d start_template=`startTemplate' -d start_value_override=`startValueOverride' -d send_email=`sendEmail"
-  }
-  elseif "`case'"= "runDetails" {
-  	local curlCode = "-X GET `baseUrlC1'`baseUrlC3'/run?api_key=`apiKey'"
-  }
-  elseif "`case'"= "runCancel" {
-  	local curlCode = "`baseUrlC1'`baseUrlC3'/cancel -X POST -d api_key=`apiKey'"
-  }
-  elseif "`case'"= "getData" {
-  	local curlCode = "-X GET `baseUrlC1'`baseUrlC2'/data?api_key=`apiKey'?format=`dataFormat'"
-  }
-  else {
-  	local curlCode = ""
-  }
+* Eventualmente podd’amos incorporar que el do obtenga
+* el listado de los œltimos 20 runs y llevarlos a la 
+* carpeta que corresponda
 
-* Corremos apiCall
-  ashellrc curl `curlCode'
-  
+capture program drop parseHubRunStart
+program def parseHubRunStart, rclass
+version 12.0
+syntax [anything], APIkey(string) PRToken(string) [STUrl(string) STTemplate(string) STValue(string) EMail]
 
-*! version 1.0 05February2009
+	* Definicion de local macros con informacion de run por correr
+	local baseurl = "https://www.parsehub.com/api/v2/projects/`prtoken'/run "
+	local adapikey = `"-X POST -d "api_key=`apikey'" "'
+	if "`sturl'" != "" local adsturl = `"-d "start_url=`sturl'" "'
+	if "`sttemplate'" != "" local adsttemplate = `"-d "start_template=`sttemplate'" "'
+	if "`stvalue'" != "" local adstvalue = `"-d "start_value_override=`stvalue'" "'
+	if "`email'" != "" local ademail = `"-d "send_email=1" "'
 
-capture program drop ashellrc
-program def ashellrc, rclass
-version 8.0
-syntax anything (name=cmd)
+	* Establecimiento de url definitiva para contactar a parseHub
+  	local curlCode = `"`baseurl'`adapikey'`adsturl'`adsttemplate'`adstvalue'`ademail'"'
 
-/*
- This little program immitates perl's backticks.
- Author: Nikos Askitas
- Date: 04 April 2007
- Modified and tested to run on windows. 
- Date: 05 February 2009
-*/
+	* Solicitud de parseHub + guardar log de respuesta en /apiCall
+	ashellrc curl `curlCode'
 
-* Run program 
-
-  display `"We will run command: `cmd'"'
-  display "We will capture the standard output of this command into"
-  display "string variables r(o1),r(o2),...,r(os) where s = r(no)."
-  local stamp = string(uniform())
-  local stamp = reverse("`stamp'")
-  local stamp = regexr("`stamp'","\.",".tmp")
-  local fname = "`stamp'"
-  shell `cmd' >> `fname'
-  tempname fh
-  global tmpName `fname'
-  local linenum =0
-  file open `fh' using "`fname'", read
-  file read `fh' line
-   while r(eof)==0 {
-    local linenum = `linenum' + 1
-    scalar count = `linenum'
-    return local o`linenum' = `"`line'"'
-    return local no = `linenum'
-    file read `fh' line
-   }
-  file close `fh'
-	
-  preserve
-  clear
-  insheetjson using `fname', topscalars replace
-  restore
-
-  shell mv `fname' apiCall/`r(run_token)'.tmp
-
-if("$S_OS"=="Windows"){
- *shell del `fname'
-}
-else{
- *shell rm `fname'
-}
-
+	* Procesamos todo lo que haya que procesar y agregar a bases
+	* Esto incluye: 
+		* Chequear listado de apicallToProcess.dta
+		* Cargar detalle en ApiCallsLog.dta
+		* Eliminar item de apicallToProcess.dta
+		* Incluir item en apicallProcFilelist.dta
+		* Para runs inicializados, agregar item en RunToCheckStatus
+		* ... (varios otros comportamientos generales
+	quietly do "${doPath}/processApiCall.do"
+		
 end
+
+capture program drop parseHubRunUpdate
+program def parseHubRunUpdate, rclass
+version 12.0
+syntax [anything], APIkey(string) PRToken(string)
+
+	* Definicion de local macros con informacion de run por correr
+	*local baseurl = "-X GET https://www.parsehub.com/api/v2/runs/`prtoken'/run"
+	*local adapikey = `"?api_key=`apikey'" "'
+
+	* Establecimiento de url definitiva para contactar a parseHub
+  	*local curlCode = `"`baseurl'`adapikey'"'
+
+	* Solicitud de parseHub + guardar log de respuesta en /apiCall
+	ashellrc curl -X GET "https://www.parsehub.com/api/v2/runs/`prtoken'?api_key=`apikey'"
+
+	* Procesamos todo lo que haya que procesar y agregar a bases
+	* Esto incluye: 
+		* Chequear listado de apicallToProcess.dta
+		* Cargar detalle en ApiCallsLog.dta
+		* Eliminar item de apicallToProcess.dta
+		* Incluir item en apicallProcFilelist.dta
+		* Para runs inicializados, agregar item en RunToCheckStatus
+		* ... (varios otros comportamientos generales
+	do "${doPath}/processApiCall.do"
+		
+end
+
+capture program drop parseHubRunCancel
+program def parseHubRunCancel, rclass
+version 12.0
+syntax [anything], APIkey(string) PRToken(string)
+
+	* Definicion de local macros con informacion de run por correr
+	local baseurl = "https://www.parsehub.com/api/v2/runs/`prtoken'/cancel "
+	local adapikey = `"-X POST -d "api_key=`apikey'" "'
+
+	* Establecimiento de url definitiva para contactar a parseHub
+  	local curlCode = `"`baseurl'`adapikey'"'
+
+	* Solicitud de parseHub + guardar log de respuesta en /apiCall
+	ashellrc curl `curlCode'
+
+	* Procesamos todo lo que haya que procesar y agregar a bases
+	* Esto incluye: 
+		* Chequear listado de apicallToProcess.dta
+		* Cargar detalle en ApiCallsLog.dta
+		* Eliminar item de apicallToProcess.dta
+		* Incluir item en apicallProcFilelist.dta
+		* Para runs inicializados, agregar item en RunToCheckStatus
+		* ... (varios otros comportamientos generales
+	do "${doPath}/processApiCall.do"
+		
+end
+
+capture program drop parseHubRunDownload
+program def parseHubRunDownload, rclass
+version 12.0
+syntax [anything], APIkey(string) PRToken(string) Format(string) FOLder(string) FILEname(string)
+
+		* Cargamos informaci—n de la fecha del run
+		preserve
+		capture use "${dtaPath}/ApiCallsLog.dta", replace
+		if _rc == 0 {
+			capture drop start_stata
+			gen start_stata = Clock(start_time, "YMD#hms")
+			format %tC start_stata
+			drop if start_stata == .
+			collapse (min) start_stata, by(run_token)
+			keep if run_token == "`prtoken'"
+			if [_N] == 1 {
+				local timeStamp = string(year(dofc(start_stata[1]))) + "-" + string(month(dofc(start_stata[1])),"%02.0f") + "-" + string(day(dofc(start_stata[1])),"%02.0f") + " "
+				di "`timeStamp'"
+			}
+		}
+		restore
+
+
+	* Solicitud de parseHub + guardar log de respuesta en /apiCall
+	!curl -o '`folder'/`timeStamp'`filename'.`format'' -X GET "https://www.parsehub.com/api/v2/runs/`prtoken'/data?api_key=`apikey'&format=`format'"
+
+	* Chequeamos integridad del archivo
+		if "`format'" == "csv" {
+			ashell zgrep 'Too much data' '`folder'/`timeStamp'`filename'.`format''
+			local downdata = r(o1)
+			if "`downdata'" == "Too much data. Use JSON instead." {
+				parseHubRunDownload, api("${apiKey}") prt("${runToDownload}") f("json") fol("${csvPath}") file("${runToDownload}")
+				!rm -f  '`folder'/`timeStamp'`filename'.`format''
+				}
+			}
+		* Eliminamos de listado
+		preserve
+			capture use "${dtaPath}/RunsToDownload.dta", replace
+			drop if run_token == "${runToDownload}"	 & format == "${frmtToDownload}"
+			save "${dtaPath}/RunsToDownload.dta", replace
+		restore
+		* Agregamos a RunsDownloaded
+		preserve
+			capture use "${dtaPath}/RunsDownloaded.dta", replace
+			if _rc == 601 {
+				clear
+				gen str240 run_token = ""
+				format %25s run_token
+				}
+			local nobs2 = [_N] +1
+			set obs `nobs2'
+			replace run_token = "${run_token}" in `nobs2'
+			capture drop varObsDuplicadas
+			bysort *: gen varObsDuplicadas=_n
+			keep if varObsDuplicadas==1
+			drop varObsDuplicadas
+			save "${dtaPath}/RunsDownloaded.dta", replace
+		restore
+
+		
+end
+

@@ -1,5 +1,7 @@
-*! version 1.0 05February2009
 
+* Ashell. Programa para correr como Shell, pero guardando
+* el output del terminal a un archivo de texto
+////////////////////////////////////////////////////////////
 capture program drop ashellrc
 program def ashellrc, rclass
 version 8.0
@@ -42,7 +44,8 @@ syntax anything (name=cmd)
   insheetjson using `fname', topscalars replace
   restore
 
-  shell mv `fname' apiCall/`r(run_token)'.tmp
+  local updname = "`r(run_token)' "+subinstr(subinstr("$S_DATE $S_TIME",":","_",.)," ","_",.)
+  shell mv `fname' apiCall/`updname'.tmp
 
 if("$S_OS"=="Windows"){
  *shell del `fname'
@@ -50,5 +53,65 @@ if("$S_OS"=="Windows"){
 else{
  *shell rm `fname'
 }
+
+end
+
+* IdentifyToProcess. Lista los archivos de una carpeta e 
+* identifica aquellos que no han sido procesados (basado en
+* un dta de inventario de procesados) generando listado de 
+* archivos para procesar.
+////////////////////////////////////////////////////////////
+capture program drop identifyToProcess
+program def identifyToProcess, rclass
+version 12.0
+syntax [anything], PATHoriginal(string) EXTfile(string) DBstorage(string)
+
+	* Guardamos estado de la base
+	preserve
+	
+	* Levantamiento de archivos en directorio original
+	clear
+	gen files = ""
+
+	local filelist: dir "`pathoriginal'" files "*.`extfile'", respectcase
+	local num=0
+	local appendlist
+
+	foreach file of local filelist {
+	   quietly set obs `++num'
+	   quietly replace files = "`file'" if [_n] == `num'
+	}
+	
+	* Guardar en base temporal 
+	if $version != 12 {
+	saveold "${dtaPath}/`dbstorage'TempFilelist.dta", replace
+	}
+	else {
+	save "${dtaPath}/`dbstorage'TempFilelist.dta", replace
+	}
+	
+	* Contrastamos la lista de procesados y la temporal
+	clear
+	capture use "${dtaPath}/`dbstorage'ProcFilelist.dta", replace
+	if _rc == 601 {
+		use "${dtaPath}/`dbstorage'TempFilelist.dta"	
+	}	
+	else {
+		merge 1:1 files using ${dtaPath}/`dbstorage'TempFilelist.dta
+	}
+	capture keep if _merge == 2
+	capture drop _merge
+	capture di _rc
+
+	* Solo se guarda lo que no est‡ procesado
+	if $version != 12 {
+	saveold "${dtaPath}/`dbstorage'ToProcess.dta", replace
+	}
+	else {
+	save "${dtaPath}/`dbstorage'ToProcess.dta", replace
+	}
+
+	* Restauramos la base
+	restore
 
 end
