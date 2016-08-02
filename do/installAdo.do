@@ -13,3 +13,8 @@ capture net install insheetjson, from(http://fmwww.bc.edu/RePEc/bocode/i)
 ***************************************************
 clear all
 set more off
+
+// C—digos necesarios para traducci—n json a csv
+***************************************************
+* sudo apt-get build-dep gawk
+* curl -Ls https://raw.github.com/archan937/jsonv.sh/master/install.sh | bash

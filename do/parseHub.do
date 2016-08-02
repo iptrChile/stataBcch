@@ -116,7 +116,6 @@ syntax [anything], APIkey(string) PRToken(string) Format(string) FOLder(string) 
 		}
 		restore
 
-
 	* Solicitud de parseHub + guardar log de respuesta en /apiCall
 	!curl -o '`folder'/`timeStamp'`filename'.`format'' -X GET "https://www.parsehub.com/api/v2/runs/`prtoken'/data?api_key=`apikey'&format=`format'"
 
@@ -125,9 +124,13 @@ syntax [anything], APIkey(string) PRToken(string) Format(string) FOLder(string) 
 			ashell zgrep 'Too much data' '`folder'/`timeStamp'`filename'.`format''
 			local downdata = r(o1)
 			if "`downdata'" == "Too much data. Use JSON instead." {
-				parseHubRunDownload, api("${apiKey}") prt("${runToDownload}") f("json") fol("${csvPath}") file("${runToDownload}")
 				!rm -f  '`folder'/`timeStamp'`filename'.`format''
+				parseHubRunDownload, api("${apiKey}") prt("${runToDownload}") f("json") fol("${csvPath}") file("${runToDownload}")
 				}
+			}
+		else if "`format'" == "json" {
+			!${doPath}/json2csv.sh "${csvPath}" "`timeStamp'`filename'" "${varJsonTrad}" "${varMainJsonTrad}"
+			*!cat '`folder'/`timeStamp'`filename'.`format'' | jsonv ${varJsonTrad} ${varMainJsonTrad} > '`folder'/`timeStamp'`filename'.csv'
 			}
 		* Eliminamos de listado
 		preserve

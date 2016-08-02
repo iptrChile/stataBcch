@@ -67,7 +67,7 @@ global doPath "${lclProjectPath}/do/"
 // Cargamos parámetros para cada proyecto específico
 ***************************************************
 local nobs = [_N]
-local metaVariables = "projectVer tipoAmbiente varsImport varsUtf varsToEncode varsPrice varsDicc varsDrop varsKey reshapeLongNeed reshapeLongRename reshapeLongByproduct reshapeLongBypEncode varsDropIfEmpty urlWebHook decimal miles shortFrmt apiKey"
+local metaVariables = "projectVer tipoAmbiente varsImport varsUtf varsToEncode varsPrice varsDicc varsDrop varsKey reshapeLongNeed reshapeLongRename reshapeLongByproduct reshapeLongBypEncode varsDropIfEmpty urlWebHook decimal miles shortFrmt apiKey varJsonTrad varMainJsonTrad"
 
 	* Diccionario
 	**************
@@ -88,6 +88,8 @@ local metaVariables = "projectVer tipoAmbiente varsImport varsUtf varsToEncode v
 	* varsDropIfEmpty 	:Variables para drop si están vacías (después del reshape) 
 	* urlWebHook		: URL Webhook 
 	* apiKey			: apiKey
+	* varJsonTrad		: listado de variables a traspasar desde json a csv (mismo nombre que en parsehub)
+	* varMainJsonTrad	: listado de variables de indice en json
 
 forvalues projNum = 1/`nobs' {
 	
