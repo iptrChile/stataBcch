@@ -53,7 +53,13 @@ do "${doPath}/processApiCall.do"
 * Cargamos archivo con detalle de apis a guardar
 	clear
 	capture use "${dtaPath}/RunsToCheckStatus.dta", replace
-	if _rc == 0 {
+	if _rc == 0 & [_N] > 0 {
+		* Eliminados duplicados del proceso
+		capture drop varObsDuplicadas
+		bysort *: gen varObsDuplicadas=_n
+		keep if varObsDuplicadas==1
+		drop varObsDuplicadas
+
 		* Mezclamos con la info que acabamos de preparar
 		merge 1:1 run_token using ${dtaPath}/tempUpdatedLog.dta
 		keep if minutes_elapsed >= ${pollingLimit} & act_status != 1
@@ -75,7 +81,13 @@ do "${doPath}/processApiCall.do"
 ////////////////////////////////////////////////////////////
 * Cargamos archivo con detalle de apis a cancelar
 capture use "${dtaPath}/RunsToKill.dta", replace
-	if _rc == 0 {
+	if _rc == 0 & [_N] > 0 {
+		* Eliminados duplicados del proceso
+		capture drop varObsDuplicadas
+		bysort *: gen varObsDuplicadas=_n
+		keep if varObsDuplicadas==1
+		drop varObsDuplicadas
+
 		local nobs = [_N]
 		if `nobs' > 0 {
 			forvalues casenum = 1/`nobs' {
@@ -96,7 +108,7 @@ capture use "${dtaPath}/RunsToKill.dta", replace
 ////////////////////////////////////////////////////////////
 * Cargamos archivo con detalle de apis a descargar
 capture use "${dtaPath}/RunsToDownload.dta", replace
-	if _rc == 0 {
+	if _rc == 0 & [_N] > 0 {
 		* Eliminados duplicados del proceso
 		capture drop varObsDuplicadas
 		bysort *: gen varObsDuplicadas=_n
