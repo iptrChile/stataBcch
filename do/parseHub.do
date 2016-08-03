@@ -156,6 +156,33 @@ syntax [anything], APIkey(string) PRToken(string) Format(string) FOLder(string) 
 			save "${dtaPath}/RunsDownloaded.dta", replace
 		restore
 
-		
 end
 
+capture program drop parseHubRunList
+program def parseHubRunList, rclass
+version 12.0
+syntax [anything], APIkey(string) PRToken(string) OFFset(integer)
+
+	* Definicion de local macros con informacion de run por correr
+	local baseurl = "https://www.parsehub.com/api/v2/projects/`prtoken'"
+	local adapikey = "?api_key=`apikey'&offset=`offset'"
+
+	* Establecimiento de url definitiva para contactar a parseHub
+  	local curlCode = `"`baseurl'`adapikey'"'
+
+	* Solicitud de parseHub + guardar log de respuesta en /apiCall
+	ashrunlist curl -X GET "`curlCode'"
+
+	* Cargamos TempRunList para identificar cantidad de runs
+	preserve
+		capture use "${dtaPath}/TempRunList.dta", replace
+		local nobs = [_N]	
+	restore
+	
+	* Si hay n = 20 sigo en el ciclo con offset de 20 adicionales
+	if `nobs' == 20 {
+		local noffset = `offset'+20
+		parseHubRunList, api(`apikey') prt(`prtoken') off(`noffset')
+	}
+		
+end

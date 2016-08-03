@@ -32,17 +32,17 @@ syntax anything (name=cmd)
   shell `cmd' >> `fname'
   tempname fh
   global tmpName `fname'
-  local linenum =0
-  file open `fh' using "`fname'", read
-  file read `fh' line
-   while r(eof)==0 {
-    local linenum = `linenum' + 1
-    scalar count = `linenum'
-    return local o`linenum' = `"`line'"'
-    return local no = `linenum'
-    file read `fh' line
-   }
-  file close `fh'
+  *local linenum =0
+  *file open `fh' using "`fname'", read
+  *file read `fh' line
+  * while r(eof)==0 {
+  *  local linenum = `linenum' + 1
+  *  scalar count = `linenum'
+  *  return local o`linenum' = `"`line'"'
+  *  return local no = `linenum'
+  *  file read `fh' line
+  * }
+  *file close `fh'
 	
   preserve
   clear
@@ -62,6 +62,65 @@ else{
   cd ${projPath}
 
 end
+
+* AshRunList. Programa para correr como Shell, pero guardando
+* el output del terminal a un archivo de texto
+////////////////////////////////////////////////////////////
+capture program drop ashrunlist
+program def ashrunlist, rclass
+version 8.0
+syntax anything (name=cmd)
+
+/*
+ This little program immitates perl's backticks.
+ Author: Nikos Askitas
+ Date: 04 April 2007
+ Modified and tested to run on windows. 
+ Date: 05 February 2009
+*/
+
+* Run program 
+
+	cd $localPath
+
+  display `"We will run command: `cmd'"'
+  display "We will capture the standard output of this command into"
+  display "string variables r(o1),r(o2),...,r(os) where s = r(no)."
+  local stamp = string(uniform())
+  local stamp = reverse("`stamp'")
+  local stamp = regexr("`stamp'","\.",".tmp")
+  local fname = "`stamp'"
+  shell `cmd' >> `fname'
+  tempname fh
+  global tmpName `fname'
+  *local linenum =0
+  *file open `fh' using "`fname'", read
+  *file read `fh' line
+  * while r(eof)==0 {
+  *  local linenum = `linenum' + 1
+  *  scalar count = `linenum'
+  *  return local o`linenum' = `"`line'"'
+  *  return local no = `linenum'
+  *  file read `fh' line
+  * }
+  *file close `fh'
+	
+  preserve
+	  clear
+	  gen str240 run_token=""
+	  format %25s run_token
+	  insheetjson run_token using `fname', tableselector(run_list) columns(run_token) replace flatten
+	  save "${dtaPath}/TempRunList.dta", replace
+	  capture append using "${dtaPath}/RunList.dta"
+	  save "${dtaPath}/RunList.dta", replace
+  restore
+  
+  shell rm -f `fname'
+
+  cd ${projPath}
+
+end
+
 
 * IdentifyToProcess. Lista los archivos de una carpeta e 
 * identifica aquellos que no han sido procesados (basado en

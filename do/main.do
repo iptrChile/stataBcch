@@ -67,7 +67,8 @@ global doPath "${lclProjectPath}/do/"
 // Cargamos par‡metros para cada proyecto espec’fico
 ***************************************************
 local nobs = [_N]
-local metaVariables = "projectVer tipoAmbiente varsImport varsUtf varsToEncode varsPrice varsDicc varsDrop varsKey reshapeLongNeed reshapeLongRename reshapeLongByproduct reshapeLongBypEncode varsDropIfEmpty urlWebHook decimal miles shortFrmt apiKey varJsonTrad varMainJsonTrad"
+local metaVar1 = "projectVer tipoAmbiente varsImport varsUtf varsToEncode varsPrice varsDicc varsDrop varsKey reshapeLongNeed reshapeLongRename reshapeLongByproduct reshapeLongBypEncode varsDropIfEmpty urlWebHook decimal miles shortFrmt apiKey varJsonTrad varMainJsonTrad"
+local metaVar2 = "prToken"
 
 	* Diccionario
 	**************
@@ -90,12 +91,13 @@ local metaVariables = "projectVer tipoAmbiente varsImport varsUtf varsToEncode v
 	* apiKey			: apiKey
 	* varJsonTrad		: listado de variables a traspasar desde json a csv (mismo nombre que en parsehub)
 	* varMainJsonTrad	: listado de variables de indice en json
+	* prToken			: project Token
 
 forvalues projNum = 1/`nobs' {
 	
 	if `projNum' == 1 {   /* Eventualmente nos echaremos este if para correr todos los proyectos */
 	
-	foreach var of varlist `metaVariables' { 
+	foreach var of varlist `metaVar1' `metaVar2' { 
 	
 		global `var' = `var'[`projNum']
 		di "${`var'}"

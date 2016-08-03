@@ -24,7 +24,33 @@ set more off
 * En el processApiCall hay que identificar el o los trigger que llevan a 
 * incluir un run en RunsToKill.  
 
-* 0. corremos apicallsToProcess, por si acaso hay algo pendiente al inicio
+* 0a. Cargamos RunList
+////////////////////////////////////////////////////////////
+parseHubRunList, api($apiKey) prt($prToken) off(0)
+
+* 0b. Agregamos RunList a RunsToCheckStatus
+////////////////////////////////////////////////////////////
+capture use "${dtaPath}/RunList.dta", replace
+		
+if [_n] > 0 {
+
+	* Eliminados duplicados del proceso
+	capture drop varObsDuplicadas
+	bysort *: gen varObsDuplicadas=_n
+	keep if varObsDuplicadas==1
+	drop varObsDuplicadas
+
+	* Eliminamos los ya bajados
+	capture merge 1:1 run_token using ${dtaPath}/RunsDownloaded.dta
+	capture drop if _merge >= 2
+	capture drop _merge
+	
+	* Agregamos a RunsToCheckStatus
+	capture append using "${dtaPath}/RunsToCheckStatus.dta"
+	save "${dtaPath}/RunsToCheckStatus.dta", replace
+	}
+
+* 0c. corremos apicallsToProcess, por si acaso hay algo pendiente al inicio
 ////////////////////////////////////////////////////////////
 do "${doPath}/processApiCall.do"
 
