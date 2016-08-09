@@ -161,7 +161,7 @@ end
 capture program drop parseHubRunList
 program def parseHubRunList, rclass
 version 12.0
-syntax [anything], APIkey(string) PRToken(string) OFFset(integer)
+syntax [anything], APIkey(string) PRToken(string) OFFset(integer) [id(integer 0)]
 
 	* Definicion de local macros con informacion de run por correr
 	local baseurl = "https://www.parsehub.com/api/v2/projects/`prtoken'"
@@ -173,16 +173,44 @@ syntax [anything], APIkey(string) PRToken(string) OFFset(integer)
 	* Solicitud de parseHub + guardar log de respuesta en /apiCall
 	ashrunlist curl -X GET "`curlCode'"
 
+	* Trabajamos el ID si no se entreg—
+	if "`id'" == "0" {
+		preserve
+			capture use "${dtaPath}/RunList.dta", replace
+			capture collapse (max) id
+			capture local id = id[1] +1
+			if _rc == 111 {
+				local id = 1
+			}
+			di `id'	
+		restore
+	}
+	
 	* Cargamos TempRunList para identificar cantidad de runs
 	preserve
 		capture use "${dtaPath}/TempRunList.dta", replace
 		local nobs = [_N]	
+		gen id = `id' 
+		gen offset = `offset'
+		capture append using "${dtaPath}/RunList.dta"
+		save "${dtaPath}/RunList.dta", replace
+		
+		if "`offset'" == "0" & "`id'" != "1" {
+			keep if id == `id' - 1 & offset == 0
+			merge 1:1 run_token using ${dtaPath}/TempRunList.dta
+			keep if _merge == 3
+			if [_N] == 20 local ngo = 0
+		}
+		else {
+			local ngo = 1
+		}
+		
 	restore
 	
 	* Si hay n = 20 sigo en el ciclo con offset de 20 adicionales
-	if `nobs' == 20 {
+	if `nobs' == 20 & `ngo' == 1 {
 		local noffset = `offset'+20
-		parseHubRunList, api(`apikey') prt(`prtoken') off(`noffset')
+		parseHubRunList, api(`apikey') prt(`prtoken') off(`noffset') id(`id')
 	}
 		
 end

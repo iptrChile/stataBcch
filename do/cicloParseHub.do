@@ -35,6 +35,7 @@ capture use "${dtaPath}/RunList.dta", replace
 if [_n] > 0 {
 
 	* Eliminados duplicados del proceso
+	capture drop id offset
 	capture drop varObsDuplicadas
 	bysort *: gen varObsDuplicadas=_n
 	keep if varObsDuplicadas==1

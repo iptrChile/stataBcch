@@ -111,8 +111,6 @@ syntax anything (name=cmd)
 	  format %25s run_token
 	  insheetjson run_token using `fname', tableselector(run_list) columns(run_token) replace flatten
 	  save "${dtaPath}/TempRunList.dta", replace
-	  capture append using "${dtaPath}/RunList.dta"
-	  save "${dtaPath}/RunList.dta", replace
   restore
   
   shell rm -f `fname'
