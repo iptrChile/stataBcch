@@ -32,24 +32,24 @@ syntax anything (name=cmd)
   shell `cmd' >> `fname'
   tempname fh
   global tmpName `fname'
-  *local linenum =0
-  *file open `fh' using "`fname'", read
-  *file read `fh' line
-  * while r(eof)==0 {
-  *  local linenum = `linenum' + 1
-  *  scalar count = `linenum'
-  *  return local o`linenum' = `"`line'"'
-  *  return local no = `linenum'
-  *  file read `fh' line
-  * }
-  *file close `fh'
+  local linenum =0
+  file open `fh' using "`fname'", read
+  file read `fh' line
+   while r(eof)==0 {
+    local linenum = `linenum' + 1
+    scalar count = `linenum'
+    return local o`linenum' = `"`line'"'
+    return local no = `linenum'
+    file read `fh' line
+   }
+  file close `fh'
 	
   preserve
   clear
   insheetjson using `fname', topscalars replace
   restore
 
-  local updname = "`r(run_token)'."+subinstr(subinstr("$S_DATE $S_TIME",":","_",.)," ","_",.)
+  local updname = "`r(run_token)'_"+subinstr(subinstr("$S_DATE $S_TIME",":","_",.)," ","_",.)
   shell mv `fname' ${projPath}apiCall/`updname'.tmp
 
 if("$S_OS"=="Windows"){

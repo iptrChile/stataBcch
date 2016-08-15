@@ -103,8 +103,8 @@ if [_N] > 0 {
 	forvalues fnum = 1/`nobs' {
 
 		* Codigo para testear sin hacer el loop completo. Eliminar al final del test
-		* capture use "${dtaPath}/apicallToProcess.dta", replace
-		* local fnum 2
+		*capture use "${dtaPath}/apicallToProcess.dta", replace
+		*local fnum 1
 
 		* Cargamos nombre de archivo a procesar
 		global fileName = files[`fnum']
@@ -141,7 +141,8 @@ if [_N] > 0 {
 			replace data_ready = "0" in 1
 			di "run cancelado, token: $run_token"
 		}
-		gen stata_timelog = Clock(word(subinstr("${fileName}","."," ",.),2),"DMYhms#")
+		di "Generando Timelog"
+		gen stata_timelog = Clock(word(subinstr(substr("${fileName}",26,.),"."," ",.),1),"DMYhms#")
 		format stata_timelog %tC
 		
 		* Integramos a base de datos general

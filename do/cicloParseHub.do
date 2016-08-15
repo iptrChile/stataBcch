@@ -37,7 +37,7 @@ if [_n] > 0 {
 	* Eliminados duplicados del proceso
 	capture drop id offset
 	capture drop varObsDuplicadas
-	bysort *: gen varObsDuplicadas=_n
+	bysort run_token: gen varObsDuplicadas=_n
 	keep if varObsDuplicadas==1
 	drop varObsDuplicadas
 
@@ -48,6 +48,10 @@ if [_n] > 0 {
 	
 	* Agregamos a RunsToCheckStatus
 	capture append using "${dtaPath}/RunsToCheckStatus.dta"
+	capture drop varObsDuplicadas
+	bysort run_token: gen varObsDuplicadas=_n
+	keep if varObsDuplicadas==1
+	drop varObsDuplicadas
 	save "${dtaPath}/RunsToCheckStatus.dta", replace
 	}
 
@@ -88,8 +92,8 @@ do "${doPath}/processApiCall.do"
 		drop varObsDuplicadas
 
 		* Mezclamos con la info que acabamos de preparar
-		merge 1:1 run_token using ${dtaPath}/tempUpdatedLog.dta
-		keep if minutes_elapsed >= ${pollingLimit} & act_status != 1
+		capture merge 1:1 run_token using ${dtaPath}/tempUpdatedLog.dta
+		capture keep if minutes_elapsed >= ${pollingLimit} & act_status != 1
 		
 		* Se inicia el ciclo
 		local nobs = [_N]

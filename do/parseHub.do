@@ -130,6 +130,11 @@ syntax [anything], APIkey(string) PRToken(string) Format(string) FOLder(string) 
 			}
 		else if "`format'" == "json" {
 			!${doPath}/json2csv.sh "${csvPath}" "`timeStamp'`filename'" "${varJsonTrad}" "${varMainJsonTrad}"
+			
+			*!mv '`folder'/`timeStamp'`filename'.`format'' '`folder'/`timeStamp'`filename'.`format'.gz'
+			*!in2csv '`folder'/`timeStamp'`filename'.`format'.gz' > '`folder'/`timeStamp'`filename'.csv' -k ${varMainJsonTrad}
+			*!rm -f  '`folder'/`timeStamp'`filename'.`format''
+			
 			*!cat '`folder'/`timeStamp'`filename'.`format'' | jsonv ${varJsonTrad} ${varMainJsonTrad} > '`folder'/`timeStamp'`filename'.csv'
 			}
 		* Eliminamos de listado
@@ -148,7 +153,7 @@ syntax [anything], APIkey(string) PRToken(string) Format(string) FOLder(string) 
 				}
 			local nobs2 = [_N] +1
 			set obs `nobs2'
-			replace run_token = "${run_token}" in `nobs2'
+			replace run_token = "`prtoken'" in `nobs2'
 			capture drop varObsDuplicadas
 			bysort *: gen varObsDuplicadas=_n
 			keep if varObsDuplicadas==1
@@ -199,7 +204,9 @@ syntax [anything], APIkey(string) PRToken(string) OFFset(integer) [id(integer 0)
 			keep if id == `id' - 1 & offset == 0
 			merge 1:1 run_token using ${dtaPath}/TempRunList.dta
 			keep if _merge == 3
-			if [_N] == 20 local ngo = 0
+			if [_N] == 20 {
+				local ngo = 0
+				}
 		}
 		else {
 			local ngo = 1
@@ -208,7 +215,7 @@ syntax [anything], APIkey(string) PRToken(string) OFFset(integer) [id(integer 0)
 	restore
 	
 	* Si hay n = 20 sigo en el ciclo con offset de 20 adicionales
-	if `nobs' == 20 & `ngo' == 1 {
+	if "`nobs'" == "20" & "`ngo'" == "1" {
 		local noffset = `offset'+20
 		parseHubRunList, api(`apikey') prt(`prtoken') off(`noffset') id(`id')
 	}
