@@ -3,7 +3,7 @@
 // no existen los crea
 ***************************************************
 	
-	local fileType = "proj lbl xsc dta tex png eps pdf plot apiCall"
+	local fileType = "proj lbl xsc dta tex png eps pdf plot apiCall csvOutput"
 	
 	foreach fld of local fileType {
 	

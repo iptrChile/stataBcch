@@ -24,140 +24,39 @@ set more off
 * En el processApiCall hay que identificar el o los trigger que llevan a 
 * incluir un run en RunsToKill.  
 
-* 0a. Cargamos RunList
+* 1. Chequeamos estructura de archivos
+////////////////////////////////////////////////////////////
+parseHubFileCreation
+
+* 2. Descargamos RunList Actualizado (listado de todos los
+* runs del proyecto, o aquellos m‡s recientes si ya tengo
+* historia suficiente).
 ////////////////////////////////////////////////////////////
 parseHubRunList, api($apiKey) prt($prToken) off(0)
 
-* 0b. Agregamos RunList a RunsToCheckStatus
+* 3. Cargamos informacion de apiCalls a archivo historico,
+* actualizamos los detalles de RunList, y definimos acciones
+* a seguir dependiendo de este resultado
 ////////////////////////////////////////////////////////////
-capture use "${dtaPath}/RunList.dta", replace
-		
-if [_n] > 0 {
+updateApiCallsLog
+updateRunListDetails
+updateRunsToDo
 
-	* Eliminados duplicados del proceso
-	capture drop id offset
-	capture drop varObsDuplicadas
-	bysort run_token: gen varObsDuplicadas=_n
-	keep if varObsDuplicadas==1
-	drop varObsDuplicadas
-
-	* Eliminamos los ya bajados
-	capture merge 1:1 run_token using ${dtaPath}/RunsDownloaded.dta
-	capture drop if _merge >= 2
-	capture drop _merge
-	
-	* Agregamos a RunsToCheckStatus
-	capture append using "${dtaPath}/RunsToCheckStatus.dta"
-	capture drop varObsDuplicadas
-	bysort run_token: gen varObsDuplicadas=_n
-	keep if varObsDuplicadas==1
-	drop varObsDuplicadas
-	save "${dtaPath}/RunsToCheckStatus.dta", replace
-	}
-
-* 0c. corremos apicallsToProcess, por si acaso hay algo pendiente al inicio
+* 4. Descargamos status actualizado de runs por chequear
 ////////////////////////////////////////////////////////////
-do "${doPath}/processApiCall.do"
+checkStatusRuns
 
-* 1. RunsToCheckStatus
+* 5. Nuevo ciclo, con la informaci—n nueva recien descargada
 ////////////////////////////////////////////////////////////
-* Actualizamos detalle de œltimos requests hechos a ParseHub, para asegurarnos
-* de no realizar un check de status que no hayamos realizado antes de X minutos
-* (si no est‡ definido, se hara con un default de 5 minutos)
-* Detalle minutos minimos de pollng limit
-	if (${pollingMinimum}+0) == 0 {
-		global pollingLimit = 5
-	}
-	else {
-		global pollingLimit = ${pollingMinimum}
-	}
-* Actualizacion de parametros de polling
-	capture use "${dtaPath}/ApiCallsLog.dta", replace
-	if _rc == 0 {
-		capture drop minutes_elapsed act_status
-		gen minutes_elapsed = minutes(Clock("$S_DATE $S_TIME","DMYhms#")-stata_timelog)	
-		egen act_status = max(status == "complete" | status == "cancelled"), by(run_token)
-		replace act_status = 0 if act_status == .
-		collapse (min) minutes_elapsed, by(run_token act_status)
-		save "${dtaPath}/tempUpdatedLog.dta", replace
-		}
-* Cargamos archivo con detalle de apis a guardar
-	clear
-	capture use "${dtaPath}/RunsToCheckStatus.dta", replace
-	if _rc == 0 & [_N] > 0 {
-		* Eliminados duplicados del proceso
-		capture drop varObsDuplicadas
-		bysort *: gen varObsDuplicadas=_n
-		keep if varObsDuplicadas==1
-		drop varObsDuplicadas
+updateApiCallsLog
+updateRunListDetails
+updateRunsToDo
 
-		* Mezclamos con la info que acabamos de preparar
-		capture merge 1:1 run_token using ${dtaPath}/tempUpdatedLog.dta
-		capture keep if minutes_elapsed >= ${pollingLimit} & act_status != 1
-		
-		* Se inicia el ciclo
-		local nobs = [_N]
-		if `nobs' > 0 {
-		forvalues casenum = 1/`nobs' {
-			preserve
-			global runToCheck = run_token[`casenum']
-			* Realizamos solicitud
-			parseHubRunUpdate, api("${apiKey}") prt("${runToCheck}")
-			restore
-			}
- 		}	
-	}
-
-* 2. RunsToKill
+* 6. Identificamos runs a Cancelar y los cancelamos
 ////////////////////////////////////////////////////////////
-* Cargamos archivo con detalle de apis a cancelar
-capture use "${dtaPath}/RunsToKill.dta", replace
-	if _rc == 0 & [_N] > 0 {
-		* Eliminados duplicados del proceso
-		capture drop varObsDuplicadas
-		bysort *: gen varObsDuplicadas=_n
-		keep if varObsDuplicadas==1
-		drop varObsDuplicadas
+updateRunsToKill
+KillRuns
 
-		local nobs = [_N]
-		if `nobs' > 0 {
-			forvalues casenum = 1/`nobs' {
-				global runToCancel = run_token[`casenum']
-				* Realizamos solicitud
-				parseHubRunCancel, api("${apiKey}") prt("${runToCancel}")
-				}
-			* Eliminamos de listado
-			preserve
-			capture use "${dtaPath}/RunsToKill.dta", replace
-			drop if run_token == "${runToCancel}"
-			save "${dtaPath}/RunsToKill.dta", replace
-			restore
-			}
- 		}
-
-* 3. RunsToDownload
+* 7. Descargamos Runs
 ////////////////////////////////////////////////////////////
-* Cargamos archivo con detalle de apis a descargar
-capture use "${dtaPath}/RunsToDownload.dta", replace
-	if _rc == 0 & [_N] > 0 {
-		* Eliminados duplicados del proceso
-		capture drop varObsDuplicadas
-		bysort *: gen varObsDuplicadas=_n
-		keep if varObsDuplicadas==1
-		drop varObsDuplicadas
-		
-		* Eliminamos archivos ya descargados
-		capture merge 1:1 run_token using ${dtaPath}/RunsDownloaded.dta
-		capture drop if _merge >= 2
-	
-		* Iniciamos ciclo de descargas si hay > 0 observaciones
-		local nobs = [_N]
-		if `nobs' > 0 {
-		forvalues casenum = 1/`nobs' {
-			global runToDownload = run_token[`casenum']
-			global frmtToDownload = format[`casenum']
-			* Realizamos solicitud
-			parseHubRunDownload, api("${apiKey}") prt("${runToDownload}") f("${frmtToDownload}") fol("${csvPath}") file("${runToDownload}")
-			}
- 		}
-	}
+DownloadRuns

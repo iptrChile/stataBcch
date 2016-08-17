@@ -124,7 +124,6 @@ forvalues projNum = 1/`nobs' {
 	***************************************************
 	*do "${doPath}/installAdo.do"
 	do "${doPath}/updatePrograms.do"
-	do "${doPath}/parseHub.do"
 	do "${doPath}/chkDirStructure.do"
 	
 	// 1. Ciclo ParseHub

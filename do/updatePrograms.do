@@ -1,6 +1,92 @@
-* Suite de funciones de ParseHub. 
+*! version 0.1 16 Julio 2016
+
+* Programa realiza la accion que corresponde en parseHub
+* Esto puede ser iniciar un run, cargar los detalles de un
+* run a resultados r(), cancelar un run, o descargar el set de 
+* datos y enviarlos a la carpeta correspondiente. 
+
+* Eventualmente poddamos incorporar que el do obtenga
+* el listado de los ltimos 20 runs y llevarlos a la 
+* carpeta que corresponda
+
+* parseHubRunStart. Inicia un nuevo run en parseHub
 ////////////////////////////////////////////////////////////
-do "${doPath}/parseHub.do"
+capture program drop parseHubRunStart
+program def parseHubRunStart, rclass
+version 12.0
+syntax [anything], APIkey(string) PRToken(string) [STUrl(string) STTemplate(string) STValue(string) EMail]
+
+	* Definicion de local macros con informacion de run por correr
+	local baseurl = "https://www.parsehub.com/api/v2/projects/`prtoken'/run "
+	local adapikey = `"-X POST -d "api_key=`apikey'" "'
+	if "`sturl'" != "" local adsturl = `"-d "start_url=`sturl'" "'
+	if "`sttemplate'" != "" local adsttemplate = `"-d "start_template=`sttemplate'" "'
+	if "`stvalue'" != "" local adstvalue = `"-d "start_value_override=`stvalue'" "'
+	if "`email'" != "" local ademail = `"-d "send_email=1" "'
+
+	* Establecimiento de url definitiva para contactar a parseHub
+  	local curlCode = `"`baseurl'`adapikey'`adsturl'`adsttemplate'`adstvalue'`ademail'"'
+
+	* Solicitud de parseHub + guardar log de respuesta en /apiCall
+	ashellrc curl `curlCode'
+		
+end
+
+* parseHubRunUpdate. Actualiza informacion de un run
+////////////////////////////////////////////////////////////
+capture program drop parseHubRunUpdate
+program def parseHubRunUpdate, rclass
+version 12.0
+syntax [anything], APIkey(string) PRToken(string)
+
+	* Definicion de local macros con informacion de run por correr
+	*local baseurl = "-X GET https://www.parsehub.com/api/v2/runs/`prtoken'/run"
+	*local adapikey = `"?api_key=`apikey'" "'
+
+	* Establecimiento de url definitiva para contactar a parseHub
+  	*local curlCode = `"`baseurl'`adapikey'"'
+
+	* Solicitud de parseHub + guardar log de respuesta en /apiCall
+
+end
+
+* parseHubRunCancel. Cancela un run en parseHub
+////////////////////////////////////////////////////////////
+capture program drop parseHubRunCancel
+program def parseHubRunCancel, rclass
+version 12.0
+syntax [anything], APIkey(string) PRToken(string)
+
+	* Definicion de local macros con informacion de run por correr
+	local baseurl = "https://www.parsehub.com/api/v2/runs/`prtoken'/cancel "
+	local adapikey = `"-X POST -d "api_key=`apikey'" "'
+
+	* Establecimiento de url definitiva para contactar a parseHub
+  	local curlCode = `"`baseurl'`adapikey'"'
+
+	* Solicitud de parseHub + guardar log de respuesta en /apiCall
+	ashellrc curl `curlCode'
+		
+end
+
+* parseHubRunDownload. Descarga un run desde parseHub
+////////////////////////////////////////////////////////////
+capture program drop parseHubRunDownload
+program def parseHubRunDownload, rclass
+version 12.0
+syntax [anything], APIkey(string) PRToken(string) Format(string) FOLder(string) FILEname(string)
+
+		* Cargamos informacin de la fecha del run
+		preserve
+		if _rc == 0 {
+			format %tC start_stata
+			if [_N] == 1 {
+				local timeStamp = string(year(dofc(start_stata[1]))) + "-" + string(month(dofc(start_stata[1])),"%02.0f") + "-" + string(day(dofc(start_stata[1])),"%02.0f") + " "
+
+
+
+
+////////////////////////////////////////////////////////////
 
 * Ashellrc. Programa para correr como Shell, pero guardando
 * el output del terminal a un archivo de texto
@@ -10,56 +96,8 @@ program def ashellrc, rclass
 version 8.0
 syntax anything (name=cmd)
 
-/*
- This little program immitates perl's backticks.
- Author: Nikos Askitas
- Date: 04 April 2007
- Modified and tested to run on windows. 
- Date: 05 February 2009
-*/
-
-* Run program 
-
 	cd $localPath
 
-  display `"We will run command: `cmd'"'
-  display "We will capture the standard output of this command into"
-  display "string variables r(o1),r(o2),...,r(os) where s = r(no)."
-  local stamp = string(uniform())
-  local stamp = reverse("`stamp'")
-  local stamp = regexr("`stamp'","\.",".tmp")
-  local fname = "`stamp'"
-  shell `cmd' >> `fname'
-  tempname fh
-  global tmpName `fname'
-  local linenum =0
-  file open `fh' using "`fname'", read
-  file read `fh' line
-   while r(eof)==0 {
-    local linenum = `linenum' + 1
-    scalar count = `linenum'
-    return local o`linenum' = `"`line'"'
-    return local no = `linenum'
-    file read `fh' line
-   }
-  file close `fh'
-	
-  preserve
-  clear
-  insheetjson using `fname', topscalars replace
-  restore
-
-  local updname = "`r(run_token)'_"+subinstr(subinstr("$S_DATE $S_TIME",":","_",.)," ","_",.)
-  shell mv `fname' ${projPath}apiCall/`updname'.tmp
-
-if("$S_OS"=="Windows"){
- *shell del `fname'
-}
-else{
- *shell rm `fname'
-}
-
-  cd ${projPath}
 
 end
 
@@ -71,54 +109,10 @@ program def ashrunlist, rclass
 version 8.0
 syntax anything (name=cmd)
 
-/*
- This little program immitates perl's backticks.
- Author: Nikos Askitas
- Date: 04 April 2007
- Modified and tested to run on windows. 
- Date: 05 February 2009
-*/
-
-* Run program 
-
 	cd $localPath
-
-  display `"We will run command: `cmd'"'
-  display "We will capture the standard output of this command into"
-  display "string variables r(o1),r(o2),...,r(os) where s = r(no)."
-  local stamp = string(uniform())
-  local stamp = reverse("`stamp'")
-  local stamp = regexr("`stamp'","\.",".tmp")
-  local fname = "`stamp'"
-  shell `cmd' >> `fname'
-  tempname fh
-  global tmpName `fname'
-  *local linenum =0
-  *file open `fh' using "`fname'", read
-  *file read `fh' line
-  * while r(eof)==0 {
-  *  local linenum = `linenum' + 1
-  *  scalar count = `linenum'
-  *  return local o`linenum' = `"`line'"'
-  *  return local no = `linenum'
-  *  file read `fh' line
-  * }
-  *file close `fh'
-	
-  preserve
-	  clear
-	  gen str240 run_token=""
-	  format %25s run_token
-	  insheetjson run_token using `fname', tableselector(run_list) columns(run_token) replace flatten
-	  save "${dtaPath}/TempRunList.dta", replace
-  restore
   
-  shell rm -f `fname'
-
-  cd ${projPath}
 
 end
-
 
 * IdentifyToProcess. Lista los archivos de una carpeta e 
 * identifica aquellos que no han sido procesados (basado en
