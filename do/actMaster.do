@@ -9,7 +9,7 @@ local appendlist
 
 foreach file of local filelist {
    quietly set obs `++num'
-   display as text in smcl  "working on file number {it:`num'}, `file'..."
+   *display as text in smcl  "working on file number {it:`num'}, `file'..."
    quietly replace files = "`file'" if [_n] == `num'
    *display as text in smcl  "... finished working on file number {it:`num'}"
    *save `file`num''

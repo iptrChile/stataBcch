@@ -1,4 +1,5 @@
 * Cambios del do para prueba gitHub
+* Prueba Git Ruben
 
 ////////////////////////////////////////////////////
 //// Author:	Ruben Catalan
@@ -66,7 +67,8 @@ global doPath "${lclProjectPath}/do/"
 // Cargamos parámetros para cada proyecto específico
 ***************************************************
 local nobs = [_N]
-local metaVariables = "projectVer tipoAmbiente varsImport varsUtf varsToEncode varsPrice varsDicc varsDrop varsKey reshapeLongNeed reshapeLongRename reshapeLongByproduct reshapeLongBypEncode varsDropIfEmpty urlWebHook decimal miles shortFrmt apiKey"
+local metaVar1 = "projectVer tipoAmbiente varsImport varsUtf varsToEncode varsPrice varsDicc varsDrop varsKey reshapeLongNeed reshapeLongRename reshapeLongByproduct reshapeLongBypEncode varsDropIfEmpty urlWebHook decimal miles shortFrmt apiKey varJsonTrad varMainJsonTrad"
+local metaVar2 = "prToken"
 
 	* Diccionario
 	**************
@@ -87,12 +89,15 @@ local metaVariables = "projectVer tipoAmbiente varsImport varsUtf varsToEncode v
 	* varsDropIfEmpty 	:Variables para drop si están vacías (después del reshape) 
 	* urlWebHook		: URL Webhook 
 	* apiKey			: apiKey
+	* varJsonTrad		: listado de variables a traspasar desde json a csv (mismo nombre que en parsehub)
+	* varMainJsonTrad	: listado de variables de indice en json
+	* prToken			: project Token
 
 forvalues projNum = 1/`nobs' {
 	
 	if `projNum' == 1 {   /* Eventualmente nos echaremos este if para correr todos los proyectos */
 	
-	foreach var of varlist `metaVariables' { 
+	foreach var of varlist `metaVar1' `metaVar2' { 
 	
 		global `var' = `var'[`projNum']
 		di "${`var'}"
@@ -119,7 +124,6 @@ forvalues projNum = 1/`nobs' {
 	***************************************************
 	*do "${doPath}/installAdo.do"
 	do "${doPath}/updatePrograms.do"
-	do "${doPath}/parseHub.do"
 	do "${doPath}/chkDirStructure.do"
 	
 	// 1. Ciclo ParseHub
