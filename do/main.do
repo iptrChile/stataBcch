@@ -123,8 +123,8 @@ forvalues projNum = 1/`nobs' {
 	// 0. Instalamos Software e Inicializamos Stata
 	***************************************************
 	*do "${doPath}/installAdo.do"
-	do "${doPath}/updatePrograms.do"
-	do "${doPath}/chkDirStructure.do"
+	quietly do "${doPath}/updatePrograms.do"
+	quietly do "${doPath}/chkDirStructure.do"
 	
 	// 1. Ciclo ParseHub
 	***************************************************	

@@ -89,8 +89,6 @@ local lclShortFrmt ${shortFrmt}
 		*drop if `x'1==.
 		}
 	
-	
-	
 	* Limpieza de duplicados
 	/* Nota que esta manera de eliminar duplicados
 	asume que la informaci—n de precios efectivamente

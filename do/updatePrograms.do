@@ -108,6 +108,7 @@ syntax [anything], APIkey(string) PRToken(string) Format(string) FOLder(string) 
 		else if "`format'" == "json" {
 			* Formato in2csv via bash file
 			quietly !${doPath}/json2csv.sh "${csvPath}" "`timeStamp'`filename'" "${varJsonTrad}" "${varMainJsonTrad}"
+			quietly !rm -f  "${csvPath}" "`timeStamp'`filename'.json.gz"
 			
 			* Formato in2csv via Stata (no funciona por referencia bash)
 			*!mv '`folder'/`timeStamp'`filename'.`format'' '`folder'/`timeStamp'`filename'.`format'.gz'
@@ -478,7 +479,7 @@ syntax [anything]
 		di "[updateRunsToDo] 		Agregando runs a monitoreo..."	
 
 		* Caso 1. encStatus = 1, running. Se agrega a RunsToCheckStatus
-		quietly keep if encStatus == 1		
+		quietly keep if encStatus == 1 | encStatus == .
 		* Loop y agregamos archivos
 		if [_N] > 0 {
 			local nobs = [_N]
@@ -494,7 +495,7 @@ syntax [anything]
 		di "[updateRunsToDo] 		Agregando runs a descarga..."	
 		
 		* Caso 2. encStatus = 2, complete. Se agrega a RunsToDownload
-		quietly keep if encStatus == 2
+		quietly keep if encStatus == 2 
 		quietly keep run_token
 		dropDuplicates run_token
 		quietly capture merge 1:1 run_token using "${dtaPath}/RunsDownloaded.dta"
@@ -784,7 +785,10 @@ syntax [anything]
 		di "[DownloadRuns] 		{it:... nada que descargar.}" 		
  		}
 	}
-
+ 	else {
+ 	* Mensaje
+	di "[DownloadRuns] 		{it:... nada que descargar.}" 		
+ 	}
 end
 
 * Ashellrc. Programa para correr como Shell, pero guardando

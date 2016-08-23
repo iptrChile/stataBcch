@@ -18,7 +18,7 @@ local fileSize = r(filelen)
 		}
 		else {
 			*chewfile using "${csvPath}/${fileName}", clear
-			capture noisily insheet ${varsImport} using "${csvPath}/${fileName}"
+			capture noisily insheet using "${csvPath}/${fileName}", clear
 		}
 
 			/* Error Handling de ac‡ para abajo !! */
@@ -50,6 +50,16 @@ local fileSize = r(filelen)
 				global importFileResult = "no"
 				global processStatus = "Error 08. Error de importacion no previsto, codigo ${codErrorHandling}"
 			}
+
+		if $projectVer == "falabPrices" run "${doPath}/renameFalab.do"
+
+		foreach var of global varsImport {
+		
+			capture confirm variable `var'
+			if _rc == 111 {
+				gen `var' = ""
+			}	
+		}
 
 		gen fechaScrap = date(substr("${fileName}",1,10),"YMD")
 		format fechaScrap %td

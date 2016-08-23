@@ -52,9 +52,10 @@ if [_N] > 0 {
 
 	di "N es mayor que 0, es `nobs'"
 
-	forvalues fnum = 1/`nobs' {
+	*forvalues fnum = 1/`nobs' {
 
-		global fileName = file[`fnum']
+		local fnum = 1
+		global fileName = files[`fnum']
 		di "Iniciando importaci—n de archivo nœmero {it:`fnum'}: {bf: ${fileName}}"
 
 		preserve
@@ -108,9 +109,10 @@ if [_N] > 0 {
 			
 			* WebHook con los resultados del proceso
 			*!curl -v -H "Accept: application/json" -H "Content-Type: application/json" -X POST -d '{"proyecto":"${projectVer}","archivo":"${fileName}","status":"${processStatus}"}' "${urlWebHook}"
+			di `"{"proyecto":"${projectVer}","archivo":"${fileName}","status":"${processStatus}"}"'
 				
 		restore
 
-	}
+	*}
 
 }
